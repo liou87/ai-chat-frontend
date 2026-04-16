@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import ReactMarkdown from "react-markdown"
 
-const API = "http://localhost:8000/api"
+const API = "https://ai-chat-production-5293.up.railway.app/api"
 
 function App() {
   const [sessions, setSessions] = useState([])          // 会话列表
