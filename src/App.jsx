@@ -29,33 +29,52 @@ function App() {
     setMessages(data)
   }
 
-  const sendMessage = async () => {
-    if (!input.trim()) return
+ const sendMessage = async () => {
+  if (!input.trim()) return
 
-    const newMessages = [...messages, { role: "user", content: input }]
-    setMessages(newMessages)
-    setInput("")
-    setLoading(true)
+  const newMessages = [...messages, { role: "user", content: input }]
+  setMessages(newMessages)
+  setInput("")
+  setLoading(true)
 
-    const res = await fetch(`${API}/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        session_id: currentSession,
-        messages: newMessages
-      })
+  // 先加一条空的 AI 消息占位
+  setMessages([...newMessages, { role: "assistant", content: "" }])
+
+  const res = await fetch(`${API}/chat/stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      session_id: currentSession,
+      messages: newMessages
     })
-    const data = await res.json()
+  })
 
-    // 如果是新会话，更新 session_id 并刷新侧边栏
-    if (!currentSession) {
-      setCurrentSession(data.session_id)
-      fetchSessions()
-    }
+  // 读取流式响应
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let fullReply = ""
 
-    setMessages([...newMessages, { role: "assistant", content: data.reply }])
-    setLoading(false)
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+
+    const chunk = decoder.decode(value)
+    fullReply += chunk
+
+    // 每收到一块就更新最后一条 AI 消息
+    setMessages(prev => {
+      const updated = [...prev]
+      updated[updated.length - 1] = { role: "assistant", content: fullReply }
+      return updated
+    })
   }
+
+  // 流结束后刷新侧边栏
+  if (!currentSession) {
+    fetchSessions()
+  }
+  setLoading(false)
+}
 
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "sans-serif" }}>
