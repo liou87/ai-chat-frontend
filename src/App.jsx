@@ -76,6 +76,34 @@ function App() {
   setLoading(false)
 }
 
+// 导出对话
+const exportChat = (format) => {
+  if (messages.length === 0) return
+
+  let content = ""
+  
+  if (format === "txt") {
+    content = messages.map(msg => 
+      `${msg.role === "user" ? "我" : "AI"}：${msg.content}`
+    ).join("\n\n")
+  } else {
+    content = messages.map(msg =>
+      msg.role === "user" 
+        ? `**我：** ${msg.content}` 
+        : `**AI：** ${msg.content}`
+    ).join("\n\n---\n\n")
+  }
+
+  // 创建下载链接
+  const blob = new Blob([content], { type: "text/plain;charset=utf-8" })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement("a")
+  a.href = url
+  a.download = `chat-export.${format}`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
   return (
     <div style={{ display: "flex", height: "100vh", fontFamily: "sans-serif" }}>
       
@@ -126,7 +154,7 @@ function App() {
           ))}
           {loading && <div style={{ color: "#999" }}>AI 正在回复...</div>}
         </div>
-
+        
         <div style={{ display: "flex", gap: 8 }}>
           <input
             value={input}
@@ -135,6 +163,12 @@ function App() {
             placeholder="输入消息..."
             style={{ flex: 1, padding: "8px 12px", borderRadius: 8, border: "1px solid #ccc" }}
           />
+          <button onClick={() => exportChat("txt")} style={{ padding: "8px 12px", borderRadius: 8 }}>
+          导出 TXT
+          </button>
+          <button onClick={() => exportChat("md")} style={{ padding: "8px 12px", borderRadius: 8 }}>
+            导出 MD
+          </button>
           <button onClick={sendMessage} style={{ padding: "8px 16px", borderRadius: 8 }}>
             发送
           </button>
